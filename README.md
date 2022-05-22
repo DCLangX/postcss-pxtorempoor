@@ -1,4 +1,4 @@
-# postcss-pxtorempoor [![NPM version](https://badge.fury.io/js/postcss-pxtorem.svg)](http://badge.fury.io/js/postcss-pxtorem)
+# postcss-pxtorempoor [![npm version](https://badge.fury.io/js/postcss-pxtorempoor.svg)](https://badge.fury.io/js/postcss-pxtorempoor)
 
 A plugin for [PostCSS](https://github.com/ai/postcss) that generates rem units from pixel units.
 
@@ -7,7 +7,7 @@ A plugin for [PostCSS](https://github.com/ai/postcss) that generates rem units f
 ## Install
 
 ```shell
-$ npm install postcss postcss-pxtorem --save-dev
+$ npm install postcss postcss-pxtorempoor --save-dev
 ```
 
 ## Usage
