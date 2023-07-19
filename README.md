@@ -1,142 +1,205 @@
-# postcss-pxtorempoor [![npm version](https://badge.fury.io/js/postcss-pxtorempoor.svg)](https://badge.fury.io/js/postcss-pxtorempoor)
+# postcss-pxtorem
+
+**English** | [中文](./README-zh.md)
 
 A plugin for [PostCSS](https://github.com/ai/postcss) that generates rem units from pixel units.
+This project is based on [Hemengke1997/PostCSS- PXTOREM](https://github.com/hemengke1997/postcss-pxtorem). Thanks to Hemengke1997. The change i made is only to add the ConvertinMediaque parameter to avoid changing the unit in media query.
 
-本插件基于postcss-pxtorem，主要变更为添加convertPxInMediaQuery参数，避免转换media中所有的css的px值，原版的mediaQuery只能控制@media这一行中写的媒体查询的屏幕大小的px值是否转换
+## ✨ New Features
 
-## Install
+- override any `postcss-pxtorem` options in css.
+- ignore next line in css.
+- **compatible with vite**.
 
-```shell
-$ npm install postcss postcss-pxtorempoor --save-dev
+## 🔧 Install
+
+```bash
+pnpm install postcss postcss-pxtorempoor -D
 ```
 
-## Usage
+## ✍️ Usage
 
-Pixels are the easiest unit to use (*opinion*). The only issue with them is that they don't let browsers change the default font size of 16. This script converts every px value to a rem from the properties you choose to allow the browser to set the font size.
+> Pixels are the easiest unit to use (_opinion_). The only issue with them is that they don't let browsers change the default font size of 16. This script converts every px value to a rem from the properties you choose to allow the browser to set the font size.
 
+### postcss.config.js
 
-### Input/Output
-
-*With the default settings, only font related properties are targeted.*
-
-```css
-// input
-h1 {
-    margin: 0 0 20px;
-    font-size: 32px;
-    line-height: 1.2;
-    letter-spacing: 1px;
-}
-
-// output
-h1 {
-    margin: 0 0 20px;
-    font-size: 2rem;
-    line-height: 1.2;
-    letter-spacing: 0.0625rem;
-}
-```
-
-### Example
+#### example
 
 ```js
-var fs = require('fs');
-var postcss = require('postcss');
-var pxtorem = require('postcss-pxtorem');
-var css = fs.readFileSync('main.css', 'utf8');
-var options = {
-    replace: false
-};
-var processedCss = postcss(pxtorem(options)).process(css).css;
+// postcss.config.js
+import pxtorom from 'postcss-pxtorempoor'
 
-fs.writeFile('main-rem.css', processedCss, function (err) {
-  if (err) {
-    throw err;
-  }
-  console.log('Rem file written.');
-});
+export default {
+  plugins: [
+    pxtorom({
+      rootValue: 16,
+      selectorBlackList: ['some-class'],
+      propList: ['*'],
+      atRules: ['media'],
+      // ...
+    }),
+  ],
+}
 ```
 
 ### options
 
-Type: `Object | Null`  
-Default:
-```js
-{
-    rootValue: 16,
-    unitPrecision: 5,
-    propList: ['font', 'font-size', 'line-height', 'letter-spacing'],
-    selectorBlackList: [],
-    replace: true,
-    mediaQuery: false,
-    convertPxInMediaQuery: false,
-    minPixelValue: 0,
-    exclude: /node_modules/i
-}
-```
+| Name                | Type                                                         | Default         | Description                                                  |
+| ------------------- | ------------------------------------------------------------ | --------------- | ------------------------------------------------------------ |
+| rootValue           | `number` \| `((input: Input) => number)`                     | 16              | Represents the root element font size or returns the root element font size based on the [`input`](https://api.postcss.org/Input.html) parameter |
+| unitToConvert       | `string`                                                     | `px`            | unit to convert, by default, it is px                        |
+| unitPrecision       | `number`                                                     | 5               | The decimal numbers to allow the REM units to grow to.       |
+| propList            | `string[]`                                                   | `['*']`         | The properties that can change from px to rem. Refer to: [propList](#propList) |
+| selectorBlackList   | `(string \| RegExp)[]`                                       | []              | The selectors to ignore and leave as px. Refer to: [selectorBlackList](#selectorBlackList) |
+| replace             | `boolean`                                                    | true            | Replaces rules containing rems instead of adding fallbacks.  |
+| atRules             | `boolean` \| `string[]`                                      | false           | Allow px to be converted in at-rules. Refer to [At-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule) |
+| minPixelValue       | `number`                                                     | 0               | Set the minimum pixel value to replace.                      |
+| exclude             | `string` \| `RegExp` \| `((filePath: string) => boolean) \| null` | /node_modules/i | The file path to ignore and leave as px. Refer to: [exclude](#exclude) |
+| include             | `string` \| `RegExp` \| `((filePath: string) => boolean)` \| `null` | null            | The file path to convert px to rem, in contrast to `exclude`, have higher priority than `exclude`. Same rules as `exclude` |
+| disable             | `boolean`                                                    | false           | disable plugin                                               |
+| convertUnitOnEnd    | `ConvertUnit` \| `ConvertUnit[]` \| false \| null            | null            | convert unit when plugin process end                         |
+| convertInMediaQuery | `boolean`                                                    | true            | convert unit in media queries                                |
 
-- `rootValue` (Number | Function) Represents the root element font size or returns the root element font size based on the [`input`](https://api.postcss.org/Input.html) parameter
-- `unitPrecision` (Number) The decimal numbers to allow the REM units to grow to.
-- `propList` (Array) The properties that can change from px to rem.
-    - Values need to be exact matches.
-    - Use wildcard `*` to enable all properties. Example: `['*']`
-    - Use `*` at the start or end of a word. (`['*position*']` will match `background-position-y`)
-    - Use `!` to not match a property. Example: `['*', '!letter-spacing']`
-    - Combine the "not" prefix with the other prefixes. Example: `['*', '!font*']`
-- `selectorBlackList` (Array) The selectors to ignore and leave as px.
-    - If value is string, it checks to see if selector contains the string.
-        - `['body']` will match `.body-class`
-    - If value is regexp, it checks to see if the selector matches the regexp.
-        - `[/^body$/]` will match `body` but not `.body`
-- `replace` (Boolean) Replaces rules containing rems instead of adding fallbacks.
-- `mediaQuery` (Boolean) Allow px to be converted in media queries.
-- `minPixelValue` (Number) Set the minimum pixel value to replace.
-- `exclude` (String, Regexp, Function) The file path to ignore and leave as px.
-    - If value is string, it checks to see if file path contains the string.
-        - `'exclude'` will match `\project\postcss-pxtorem\exclude\path`
-    - If value is regexp, it checks to see if file path matches the regexp.
-        - `/exclude/i` will match `\project\postcss-pxtorem\exclude\path`
-    - If value is function, you can use exclude function to return a true and the file will be ignored.
-        - the callback will pass the file path as  a parameter, it should returns a Boolean result.
-        - `function (file) { return file.indexOf('exclude') !== -1; }`
+#### propList
 
-### Use with gulp-postcss and autoprefixer
+- Values need to be exact matches.
+- Use wildcard `*` to enable all properties. Example: `['*']`
+- Use `*` at the start or end of a word. (`['*position*']` will match `background-position-y`)
+- Use `!` to not match a property. Example: `['*', '!letter-spacing']`
+- Combine the "not" prefix with the other prefixes. Example: `['*', '!font*']`
 
-```js
-var gulp = require('gulp');
-var postcss = require('gulp-postcss');
-var autoprefixer = require('autoprefixer');
-var pxtorem = require('postcss-pxtorem');
+#### selectorBlackList
 
-gulp.task('css', function () {
+- If value is string, it checks to see if selector contains the string.
+  - `['body']` will match `.body-class`
+- If value is regexp, it checks to see if the selector matches the regexp.
+  - `[/^body$/]` will match `body` but not `.body`
 
-    var processors = [
-        autoprefixer({
-            browsers: 'last 1 version'
-        }),
-        pxtorem({
-            replace: false
-        })
-    ];
+#### exclude
 
-    return gulp.src(['build/css/**/*.css'])
-        .pipe(postcss(processors))
-        .pipe(gulp.dest('build/css'));
-});
-```
+- If value is string, it checks to see if file path contains the string.
+  - `'exclude'` will match `\project\postcss-pxtorem\exclude\path`
+- If value is regexp, it checks to see if file path matches the regexp.
+  - `/exclude/i` will match `\project\postcss-pxtorem\exclude\path`
+- If value is function, you can use exclude function to return a true and the file will be ignored.
+  - the callback will pass the file path as a parameter, it should returns a Boolean result.
+  - `function (file) { return file.includes('exclude') }`
 
-### A message about ignoring properties
-Currently, the easiest way to have a single property ignored is to use a capital in the pixel unit declaration.
+## ✨ About new features
+
+### ⚙️ Dynamically set plugin options in css
+
+#### disable plugin
 
 ```css
-// `px` is converted to `rem`
-.convert {
-    font-size: 16px; // converted to 1rem
-}
-
-// `Px` or `PX` is ignored by `postcss-pxtorem` but still accepted by browsers
-.ignore {
-    border: 1Px solid; // ignored
-    border-width: 2PX; // ignored
+/* pxtorem?disable=true */
+.rule {
+  font-size: 15px; // 15px
 }
 ```
+
+#### set rootValue
+
+```css
+/* pxtorem?rootValue=32 */
+.rule {
+  font-size: 30px; // 0.9375rem
+}
+```
+
+🌰 The above is just a simple example, you can set any of the options supported by `postcss-pxtorem` in the css file
+
+You may have seen that the css comment is very much like the browser url?😼.
+That's right. For the specification, just refer to: [query-string](https://github.com/sindresorhus/query-string)
+
+#### example
+
+```css
+/* pxtorem?disable=false&rootValue=32&propList[]=*&replace=false&selectorBlackList[]=/some-class/i */
+```
+
+### disable the next line in css file
+
+```css
+.rule {
+  /* pxtorem-disable-next-line */
+  font-size: 15px; // 15px
+}
+```
+
+If you write `15PX` (as long as it's not `px`), the plugin also ignores it, because `unitToConvert` defaults to `px`
+If you want to use `PX` to ignore and want the final unit to be `px`, you can:
+
+```js
+// postcss.config.js
+import pxtorem from 'postcss-pxtorempoor'
+
+export default {
+  plugins: [
+    pxtorem({
+      convertUnitOnEnd: {
+        sourceUnit: /[p|P][x|X]$/,
+        targetUnit: 'px',
+      },
+    }),
+  ],
+}
+```
+
+## use with flexible js
+
+### example
+
+```ts
+;(function () {
+  if (typeof window === 'undefined') return
+
+  const maxWidth = 1024
+  const uiWidth = 375
+
+  function resize() {
+    let width = window.innerWidth
+
+    if (width > window.screen.width) {
+    } else {
+      if (width >= maxWidth) {
+        width = maxWidth
+      }
+      document.documentElement.style.fontSize = `${(width * 16) / uiWidth}px`
+    }
+  }
+
+  resize()
+
+  let timer: NodeJS.Timer
+  const interval = 1000
+
+  window.addEventListener('resize', () => {
+    clearTimeout(timer)
+    timer = setTimeout(resize, interval)
+  })
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+      clearTimeout(timer)
+      timer = setTimeout(resize, interval)
+      resize()
+    }
+  })
+})()
+```
+
+## ❤️ Thanks
+
+[hemengke1997/postcss-pxtorem](https://github.com/hemengke1997/postcss-pxtorem)
+
+[postcss-pxtorem](https://github.com/cuth/postcss-pxtorem)
+
+[@tcstory/postcss-px-to-viewport](https://github.com/tcstory/postcss-px-to-viewport)
+
+## 👀 Related
+
+A CSS post-processor that converts px to viewport: [postcss-pxtoviewport](https://github.com/hemengke1997/postcss-pxtoviewport)
+
+## 💕 Support
+
+**If this has helped you, please don't hesitate to give a STAR, thanks! 😎**
